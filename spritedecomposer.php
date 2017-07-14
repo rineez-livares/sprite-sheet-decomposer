@@ -16,6 +16,8 @@ else
 	$msg = validUploadFile($_FILES["file"]);
 	if( $msg == "valid")
 	{
+        echo "<h1><a href=\"./sprites.zip\"/>Download</a><h1>";
+
 		//move_uploaded_file($_FILES["file"]["tmp_name"], $_FILES["file"]["name"]);
 		$frameWidth = $_POST["width"];
 		$frameHeight = $_POST["height"];
@@ -38,6 +40,8 @@ else
 			for($col = 0; $col < $width / $frameWidth; $col++)
 			{
 				$desimage = imagecreatetruecolor($frameWidth, $frameHeight);
+                imagealphablending($desimage, false);
+                imagesavealpha($desimage, true);
 				$transparent_new = ImageColorAllocate($desimage, $r, $g, $b);
 				$transparent_new_index = ImageColorTransparent( $desimage, $transparent_new );
 				ImageFill( $desimage, 0, 0, $transparent_new_index );
@@ -52,6 +56,8 @@ else
 				$frameNumber++;
 			}
 		}
+
+        download();
 	}
 	else
 	{
@@ -133,4 +139,38 @@ function validImages()
 		return true;
 	}
 }
+
+function download() {
+    // Get real path for our folder
+    $rootPath = realpath('./result');
+
+    // Initialize archive object
+    $zip = new ZipArchive();
+    $zip->open('sprites.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+    // Create recursive directory iterator
+    /** @var SplFileInfo[] $files */
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($rootPath),
+        RecursiveIteratorIterator::LEAVES_ONLY
+    );
+
+    foreach ($files as $name => $file)
+    {
+        // Skip directories (they would be added automatically)
+        if (!$file->isDir())
+        {
+            // Get real and relative path for current file
+            $filePath = $file->getRealPath();
+            $relativePath = substr($filePath, strlen($rootPath) + 1);
+
+            // Add current file to archive
+            $zip->addFile($filePath, $relativePath);
+        }
+    }
+
+    // Zip archive will be created only after closing object
+    $zip->close();
+}
+
 ?>
